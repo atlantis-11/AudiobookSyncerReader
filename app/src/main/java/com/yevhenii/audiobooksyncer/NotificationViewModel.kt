@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.File
 
+private const val TAG = "NotificationViewModel"
+
 class NotificationViewModel : ViewModel() {
     var syncFragments by mutableStateOf<List<SyncFragment>?>(null)
         private set
@@ -22,6 +24,7 @@ class NotificationViewModel : ViewModel() {
 
     private val repo = NotificationDataRepository
     private val audiobooksDir = "${Environment.getExternalStorageDirectory().absolutePath}/Audiobooks"
+    private val syncMapFileName = "sync_map.json"
 
     private var currentFolder: String? = null
     private var audioFilesWithStartPositions: Map<String, Long>? = null
@@ -47,9 +50,9 @@ class NotificationViewModel : ViewModel() {
         val bookDir = "$audiobooksDir/$newFolder"
 
         withContext(Dispatchers.IO) {
-            Log.d("asd", "Loading json...")
+            Log.d(TAG, "Loading sync map...")
 
-            val syncFile = File("$bookDir/final_result.json")
+            val syncFile = File("$bookDir/$syncMapFileName")
             if (!syncFile.exists()) {
                 return@withContext
             }
@@ -61,12 +64,13 @@ class NotificationViewModel : ViewModel() {
                 SyncFragment.fromJSONObject(jsonArray.getJSONObject(i))
             }
 
-            Log.d("asd", "Loading mp3 files...")
+            Log.d(TAG, "Sync map loaded")
+            Log.d(TAG, "Loading audio files...")
 
             audioFilesWithStartPositions =
                 getAudioFilesWithStartPositions(bookDir)
 
-            Log.d("asd", "mp3 files loaded")
+            Log.d(TAG, "Audio files loaded")
         }
     }
 
@@ -84,7 +88,7 @@ class NotificationViewModel : ViewModel() {
 
         currentFragmentIndex = findSyncFragmentIndex(globalPos) ?: return
 
-        Log.d("asd", currentFragmentIndex.toString())
+        Log.d(TAG, "Fragment: $currentFragmentIndex")
     }
 
     private fun getAudioFilesWithStartPositions(directoryPath: String): Map<String, Long> {
