@@ -3,6 +3,7 @@ package com.yevhenii.audiobooksyncer
 import android.media.MediaMetadataRetriever
 import android.os.Environment
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -84,7 +85,8 @@ class NotificationViewModel : ViewModel() {
 
         if (currentFragment != null &&
             globalPos >= currentFragment.begin &&
-            globalPos <= currentFragment.end) return
+            globalPos <= currentFragment.end
+        ) return
 
         currentFragmentIndex = findSyncFragmentIndex(globalPos) ?: return
 
@@ -92,32 +94,34 @@ class NotificationViewModel : ViewModel() {
     }
 
     private fun getAudioFilesWithStartPositions(directoryPath: String): Map<String, Long> {
-        val audioFilesWithStartPositions: MutableMap<String, Long> = mutableMapOf()
+        val directory = File(directoryPath)
+        val files = directory.listFiles()?.sortedBy { it.name } ?: return emptyMap()
+
         var cumulativeDuration: Long = 0
 
-        val directory = File(directoryPath)
-        val files = directory.listFiles()?.sortedBy { it.name }
-
-        if (files != null) {
-            for (file in files) {
-                if (file.isFile && file.name.endsWith(".mp3")) {
-                    val retriever = MediaMetadataRetriever()
-                    retriever.setDataSource(file.absolutePath)
-                    val duration = retriever.extractMetadata(
-                        MediaMetadataRetriever.METADATA_KEY_DURATION
-                    )?.toLong() ?: 0
-                    retriever.release()
-
-                    // Store the file name with its starting position
-                    audioFilesWithStartPositions[file.name] = cumulativeDuration
-
-                    // Update the cumulative duration
-                    cumulativeDuration += duration
-                }
+        return files
+            .filter { it.isFile && it.isAudioFile() }
+            .associateWith { file ->
+                val startPosition = cumulativeDuration
+                cumulativeDuration += file.getDuration()
+                startPosition
             }
-        }
+            .mapKeys { it.key.name }
+    }
 
-        return audioFilesWithStartPositions
+    private fun File.isAudioFile(): Boolean {
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.extension)
+        return mimeType != null && mimeType.startsWith("audio")
+    }
+
+    private fun File.getDuration(): Long {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this.absolutePath)
+        val duration = retriever.extractMetadata(
+            MediaMetadataRetriever.METADATA_KEY_DURATION
+        )?.toLong() ?: 0
+        retriever.release()
+        return duration
     }
 
     private fun findSyncFragmentIndex(position: Long): Int? {
