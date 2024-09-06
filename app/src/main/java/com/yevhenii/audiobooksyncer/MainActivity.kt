@@ -52,10 +52,12 @@ class MainActivity : ComponentActivity() {
         }
 
         if (!Environment.isExternalStorageManager()) {
-            startActivity(Intent(
-                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.parse("package:$packageName")
-            ))
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+            )
         }
 
         setContent {
@@ -81,7 +83,10 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationAccess() {
         val componentName = getNotificationListenerComponentName()
         val intent = Intent(Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS))
-        intent.putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, componentName.flattenToString())
+        intent.putExtra(
+            Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+            componentName.flattenToString()
+        )
         startActivity(intent)
     }
 
