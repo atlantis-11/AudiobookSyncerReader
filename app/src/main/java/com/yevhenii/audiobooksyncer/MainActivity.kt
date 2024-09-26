@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.yevhenii.audiobooksyncer.ui.theme.AudiobookSyncerTheme
 
 class MainActivity : ComponentActivity() {
@@ -138,9 +139,11 @@ suspend fun LazyListState.animateScrollAndCentralizeItem(index: Int) {
 fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
     var showTgt by remember { mutableStateOf(false) }
 
+    val regularColor = LocalContentColor.current.copy(alpha = 0.8f)
     val fadedColor = LocalContentColor.current.copy(alpha = 0.3f)
 
-    val textColor = if (highlighted) LocalContentColor.current else fadedColor
+    val textColor = if (highlighted) regularColor else fadedColor
+    val fontSize = 17.sp
     val toggleContent = { showTgt = !showTgt }
 
     Column(
@@ -149,10 +152,10 @@ fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(text = syncFragment.src, color = textColor)
+        Text(text = syncFragment.src, color = textColor, fontSize = fontSize)
 
         if (showTgt) {
-            Text(text = syncFragment.tgt, color = textColor)
+            Text(text = syncFragment.tgt, color = textColor, fontSize = fontSize)
         }
     }
 }
