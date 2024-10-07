@@ -10,12 +10,28 @@ import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
+import android.view.KeyEvent
 import android.widget.Toast
+
+private const val TAG = "SABPNotificationListener"
 
 class SABPNotificationListener : NotificationListenerService() {
     companion object {
         private const val POLLING_INTERVAL_MS = 250L
         private val TARGET_PACKAGES = listOf("mdmt.sabp", "mdmt.sabp.free")
+
+        private var mediaController: MediaController? = null
+
+        fun togglePlayback() {
+            mediaController?.let {
+                Log.d(TAG, "Toggling playback state from: ${it.playbackState?.state}")
+
+                it.dispatchMediaButtonEvent(
+                    KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                )
+            }
+        }
     }
 
     private lateinit var notificationFolder: String
@@ -23,7 +39,7 @@ class SABPNotificationListener : NotificationListenerService() {
 
     private val uiHandler = Handler(Looper.getMainLooper())
     private var isPolling = false
-    private var mediaController: MediaController? = null
+
     private val updateNotificationDataRunnable = object : Runnable {
         override fun run() {
             updateNotificationData()
@@ -53,13 +69,15 @@ class SABPNotificationListener : NotificationListenerService() {
         val mediaSessionToken = extras.get(EXTRA_MEDIA_SESSION) as? MediaSession.Token ?: return
         mediaController = MediaController(applicationContext, mediaSessionToken)
 
-        mediaController!!.playbackState?.let { state ->
-            if (state.state == STATE_PLAYING) {
+        mediaController?.playbackState?.let {
+            if (it.state == STATE_PLAYING) {
                 if (!isPolling) startPollingPlaybackPosition()
             } else {
                 if (isPolling) stopPollingPlaybackPosition()
                 updateNotificationData()
             }
+
+            Log.d(TAG, "Playback state: ${it.state}")
         }
     }
 
