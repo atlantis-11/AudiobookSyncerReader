@@ -82,6 +82,9 @@ class SABPNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        sbn ?: return
+        if (!TARGET_PACKAGES.contains(sbn.packageName)) return
+
         stopPollingPlaybackPosition()
         NotificationDataRepository.setNotificationData(null)
         mediaController = null
