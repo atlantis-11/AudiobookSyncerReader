@@ -52,12 +52,31 @@ class SABPNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Toast.makeText(this, "Listening for SABP notifications!", Toast.LENGTH_SHORT).show()
+
+        getActiveNotifications().firstOrNull {
+            TARGET_PACKAGES.contains(it.packageName)
+        }?.let {
+            processNotification(it)
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
         if (!TARGET_PACKAGES.contains(sbn.packageName)) return
 
+        processNotification(sbn)
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        sbn ?: return
+        if (!TARGET_PACKAGES.contains(sbn.packageName)) return
+
+        stopPollingPlaybackPosition()
+        NotificationDataRepository.setNotificationData(null)
+        mediaController = null
+    }
+
+    private fun processNotification(sbn: StatusBarNotification) {
         val extras = sbn.notification.extras
         val title = extras.getString(EXTRA_TITLE)
         val text = extras.getString(EXTRA_TEXT)
@@ -83,15 +102,6 @@ class SABPNotificationListener : NotificationListenerService() {
 
             Log.d(TAG, "Playback state: $it")
         }
-    }
-
-    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        sbn ?: return
-        if (!TARGET_PACKAGES.contains(sbn.packageName)) return
-
-        stopPollingPlaybackPosition()
-        NotificationDataRepository.setNotificationData(null)
-        mediaController = null
     }
 
     private fun startPollingPlaybackPosition() {
