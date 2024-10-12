@@ -117,57 +117,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-suspend fun LazyListState.animateScrollAndCentralizeItem(index: Int) {
-    val getItemInfo = {
-        this.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-    }
-
-    var animate = true
-    var itemInfo = getItemInfo()
-
-    if (itemInfo == null) {
-        animate = false
-        scrollToItem(index)
-        itemInfo = getItemInfo()
-    }
-
-    if (itemInfo != null) {
-        val center = layoutInfo.viewportEndOffset / 2
-        val childCenter = itemInfo.offset + itemInfo.size / 2
-
-        (childCenter - center).toFloat().let {
-            if (animate) animateScrollBy(it)
-            else scrollBy(it)
-        }
-    }
-}
-
-@Composable
-fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
-    var showTgt by remember { mutableStateOf(false) }
-
-    val regularColor = LocalContentColor.current.copy(alpha = 0.8f)
-    val fadedColor = LocalContentColor.current.copy(alpha = 0.3f)
-
-    val textColor = if (highlighted) regularColor else fadedColor
-    val fontSize = 17.sp
-    val toggleContent = { showTgt = !showTgt }
-
-    Column(
-        modifier = Modifier
-            .clickable(onClick = toggleContent)
-            .fillMaxWidth()
-            .padding(15.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Text(text = syncFragment.src, color = textColor, fontSize = fontSize)
-
-        if (showTgt) {
-            Text(text = syncFragment.tgt, color = textColor, fontSize = fontSize)
-        }
-    }
-}
-
 @Composable
 fun MainScreen(viewModel: NotificationViewModel) {
     val syncFragments = viewModel.syncFragments
@@ -203,6 +152,57 @@ fun MainScreen(viewModel: NotificationViewModel) {
             }
         ) {
             Icon(Icons.Default.PlayArrow, contentDescription = "Play pause")
+        }
+    }
+}
+
+@Composable
+fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
+    var showTgt by remember { mutableStateOf(false) }
+
+    val regularColor = LocalContentColor.current.copy(alpha = 0.8f)
+    val fadedColor = LocalContentColor.current.copy(alpha = 0.3f)
+
+    val textColor = if (highlighted) regularColor else fadedColor
+    val fontSize = 17.sp
+    val toggleContent = { showTgt = !showTgt }
+
+    Column(
+        modifier = Modifier
+            .clickable(onClick = toggleContent)
+            .fillMaxWidth()
+            .padding(15.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text(text = syncFragment.src, color = textColor, fontSize = fontSize)
+
+        if (showTgt) {
+            Text(text = syncFragment.tgt, color = textColor, fontSize = fontSize)
+        }
+    }
+}
+
+suspend fun LazyListState.animateScrollAndCentralizeItem(index: Int) {
+    val getItemInfo = {
+        this.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+    }
+
+    var animate = true
+    var itemInfo = getItemInfo()
+
+    if (itemInfo == null) {
+        animate = false
+        scrollToItem(index)
+        itemInfo = getItemInfo()
+    }
+
+    if (itemInfo != null) {
+        val center = layoutInfo.viewportEndOffset / 2
+        val childCenter = itemInfo.offset + itemInfo.size / 2
+
+        (childCenter - center).toFloat().let {
+            if (animate) animateScrollBy(it)
+            else scrollBy(it)
         }
     }
 }
