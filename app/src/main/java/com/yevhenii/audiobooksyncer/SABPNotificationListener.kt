@@ -5,6 +5,7 @@ import android.app.Notification.EXTRA_TEXT
 import android.app.Notification.EXTRA_TITLE
 import android.media.session.MediaController
 import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Handler
 import android.os.Looper
@@ -36,6 +37,7 @@ class SABPNotificationListener : NotificationListenerService() {
 
     private lateinit var notificationFolder: String
     private lateinit var notificationFile: String
+    private var playbackState = PlaybackState.STATE_NONE
 
     private val uiHandler = Handler(Looper.getMainLooper())
     private var isPolling = false
@@ -69,15 +71,17 @@ class SABPNotificationListener : NotificationListenerService() {
         val mediaSessionToken = extras.get(EXTRA_MEDIA_SESSION) as? MediaSession.Token ?: return
         mediaController = MediaController(applicationContext, mediaSessionToken)
 
-        mediaController?.playbackState?.let {
-            if (it.state == STATE_PLAYING) {
+        mediaController?.playbackState?.state?.let {
+            playbackState = it
+
+            if (it == STATE_PLAYING) {
                 if (!isPolling) startPollingPlaybackPosition()
             } else {
                 if (isPolling) stopPollingPlaybackPosition()
                 updateNotificationData()
             }
 
-            Log.d(TAG, "Playback state: ${it.state}")
+            Log.d(TAG, "Playback state: $it")
         }
     }
 
@@ -106,7 +110,8 @@ class SABPNotificationListener : NotificationListenerService() {
                 NotificationData(
                     folder = notificationFolder,
                     file = notificationFile,
-                    filePosition = it
+                    filePosition = it,
+                    playbackState = playbackState
                 )
             )
         }

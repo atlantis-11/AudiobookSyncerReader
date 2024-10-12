@@ -3,6 +3,7 @@ package com.yevhenii.audiobooksyncer
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: NotificationViewModel) {
     val syncFragments = viewModel.syncFragments
     val currentFragmentIndex = viewModel.currentFragmentIndex
+    val playbackState = viewModel.playbackState
 
     syncFragments ?: return
     currentFragmentIndex ?: return
@@ -151,7 +154,11 @@ fun MainScreen(viewModel: NotificationViewModel) {
                 SABPNotificationListener.togglePlayback()
             }
         ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = "Play pause")
+            if (playbackState == PlaybackState.STATE_PAUSED) {
+                Icon(Icons.Default.PlayArrow, contentDescription = "Play")
+            } else {
+                Icon(Icons.Default.Pause, contentDescription = "Pause")
+            }
         }
     }
 }

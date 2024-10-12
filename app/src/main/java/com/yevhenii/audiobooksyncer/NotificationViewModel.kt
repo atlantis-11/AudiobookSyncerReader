@@ -1,10 +1,12 @@
 package com.yevhenii.audiobooksyncer
 
 import android.media.MediaMetadataRetriever
+import android.media.session.PlaybackState
 import android.os.Environment
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -22,6 +24,8 @@ class NotificationViewModel : ViewModel() {
         private set
     var currentFragmentIndex by mutableStateOf<Int?>(null)
         private set
+    var playbackState by mutableIntStateOf(PlaybackState.STATE_NONE)
+        private set
 
     private val repo = NotificationDataRepository
     private val audiobooksDir = "${Environment.getExternalStorageDirectory().absolutePath}/Audiobooks"
@@ -34,6 +38,8 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             repo.notificationData.collect {
                 it ?: return@collect
+
+                playbackState = it.playbackState
 
                 handleFolderChange(it.folder)
                 handleFileAndPositionChange(it.file, it.filePosition)
