@@ -156,7 +156,8 @@ fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
     Column(
         modifier = Modifier
             .clickable(onClick = toggleContent)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(15.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Text(text = syncFragment.src, color = textColor, fontSize = fontSize)
@@ -185,9 +186,7 @@ fun MainScreen(viewModel: NotificationViewModel) {
     Box {
         LazyColumn(
             state = listState,
-            modifier = Modifier.padding(horizontal = 15.dp),
-            verticalArrangement = Arrangement.spacedBy(30.dp),
-            contentPadding = PaddingValues(vertical = 30.dp)
+            contentPadding = PaddingValues(vertical = 15.dp)
         ) {
             itemsIndexed(syncFragments) { index, item ->
                 FragmentElement(item, index == currentFragmentIndex)
