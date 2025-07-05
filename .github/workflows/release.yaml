@@ -53,3 +53,4 @@ jobs:
         with:
           files: AudiobookSyncer-*.apk
           tag_name: ${{ steps.get-version.outputs.version }}
+          body: ${{ steps.get-version.outputs.version }}
