@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build signed APK
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Get version
+        id: get-version
+        run: |
+          VERSION="$(date +"%Y%m%d")-$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Move APK
+        run: |
+          mv app/build/outputs/apk/release/app-release.apk \
+            AudiobookSyncer-${{ steps.get-version.outputs.version }}.apk
+
+      - name: Push tag
+        run: |
+          VERSION=${{ steps.get-version.outputs.version }}
+          git tag $VERSION && git push origin $VERSION
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AudiobookSyncer-*.apk
+          tag_name: ${{ steps.get-version.outputs.version }}
