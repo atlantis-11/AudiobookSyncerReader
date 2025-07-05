@@ -33,6 +33,35 @@ class SABPNotificationListener : NotificationListenerService() {
                 )
             }
         }
+
+        fun seek(direction: SeekDirection, amount: SeekAmount) {
+            mediaController?.let {
+                val keyCode = when(direction) {
+                    SeekDirection.FORWARD -> KeyEvent.KEYCODE_MEDIA_NEXT
+                    SeekDirection.BACKWARD -> KeyEvent.KEYCODE_MEDIA_PREVIOUS
+                }
+
+                val repetitions = when(amount) {
+                    SeekAmount.SMALL -> 1 // 7 seconds
+                    SeekAmount.LARGE -> 4 // 28 seconds
+                }
+
+                Log.d(TAG, "Seeking ${direction.name} $repetitions time(s)")
+
+                for (i in 1..repetitions) {
+                    it.dispatchMediaButtonEvent(
+                        KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
+                    )
+                }
+            }
+        }
+    }
+
+    enum class SeekDirection {
+        FORWARD, BACKWARD
+    }
+    enum class SeekAmount {
+        SMALL, LARGE
     }
 
     private lateinit var notificationFolder: String
