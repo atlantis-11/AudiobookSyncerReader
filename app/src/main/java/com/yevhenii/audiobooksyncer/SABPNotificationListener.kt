@@ -1,8 +1,10 @@
 package com.yevhenii.audiobooksyncer
 
+import android.app.Notification
 import android.app.Notification.EXTRA_MEDIA_SESSION
 import android.app.Notification.EXTRA_TEXT
 import android.app.Notification.EXTRA_TITLE
+import android.app.PendingIntent
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -12,7 +14,6 @@ import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import android.view.KeyEvent
 import android.widget.Toast
 
 private const val TAG = "SABPNotificationListener"
@@ -22,38 +23,38 @@ class SABPNotificationListener : NotificationListenerService() {
         private const val POLLING_INTERVAL_MS = 250L
         private val TARGET_PACKAGES = listOf("mdmt.sabp", "mdmt.sabp.free")
 
-        private var mediaController: MediaController? = null
+        private var notification: Notification? = null
 
-        fun togglePlayback() {
-            mediaController?.let {
-                Log.d(TAG, "Toggling playback state from: ${it.playbackState?.state}")
-
-                it.dispatchMediaButtonEvent(
-                    KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                )
+        private fun sendNotificationActionIntent(title: String) {
+            try {
+                notification
+                    ?.actions
+                    ?.firstOrNull { it.title == title }
+                    ?.actionIntent?.send()
+            } catch (e: PendingIntent.CanceledException) {
+                Log.d(TAG, "Error sending intent: $title")
             }
         }
 
+        fun togglePlayback() {
+            Log.d(TAG, "Toggling playback")
+            sendNotificationActionIntent("Play / Pause")
+        }
+
         fun seek(direction: SeekDirection, amount: SeekAmount) {
-            mediaController?.let {
-                val keyCode = when(direction) {
-                    SeekDirection.FORWARD -> KeyEvent.KEYCODE_MEDIA_NEXT
-                    SeekDirection.BACKWARD -> KeyEvent.KEYCODE_MEDIA_PREVIOUS
-                }
-
-                val repetitions = when(amount) {
-                    SeekAmount.SMALL -> 1 // 7 seconds
-                    SeekAmount.LARGE -> 4 // 28 seconds
-                }
-
-                Log.d(TAG, "Seeking ${direction.name} $repetitions time(s)")
-
-                for (i in 1..repetitions) {
-                    it.dispatchMediaButtonEvent(
-                        KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
-                    )
-                }
+            val sign = when(direction) {
+                SeekDirection.FORWARD -> "+"
+                SeekDirection.BACKWARD -> "−" // not hyphen
             }
+
+            val seconds = when(amount) {
+                SeekAmount.SMALL -> 7
+                SeekAmount.LARGE -> 30
+            }
+
+            Log.d(TAG, "Seeking ${direction.name} $seconds seconds")
+
+            sendNotificationActionIntent("$sign$seconds")
         }
     }
 
@@ -63,6 +64,8 @@ class SABPNotificationListener : NotificationListenerService() {
     enum class SeekAmount {
         SMALL, LARGE
     }
+
+    private var mediaController: MediaController? = null
 
     private lateinit var notificationFolder: String
     private lateinit var notificationFile: String
@@ -111,6 +114,8 @@ class SABPNotificationListener : NotificationListenerService() {
         val text = extras.getString(EXTRA_TEXT)
 
         if (title == null || text == null) return
+
+        notification = sbn.notification // used for playback control
 
         notificationFolder = text
         notificationFile = title
