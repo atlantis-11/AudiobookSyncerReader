@@ -182,9 +182,9 @@ fun PlaybackControlButton(
 
     var totalDragAmount by remember { mutableFloatStateOf(0f) }
 
-    // thresholds
-    val smallDragThreshold = 100f
-    val largeDragThreshold = 300f
+    // thresholds in dp
+    val smallDragThreshold = 40
+    val largeDragThreshold = 110
 
     fun handleSeek(dragAmount: Float) {
         val absAmount = abs(dragAmount)
@@ -218,7 +218,7 @@ fun PlaybackControlButton(
                 totalDragAmount += dragAmount
             },
             onDragEnd = {
-                handleSeek(totalDragAmount)
+                handleSeek(totalDragAmount.toDp().value)
             }
         )
     }
