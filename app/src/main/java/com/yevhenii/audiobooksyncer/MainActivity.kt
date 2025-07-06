@@ -50,12 +50,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yevhenii.audiobooksyncer.SABPNotificationListener.SeekAmount
 import com.yevhenii.audiobooksyncer.SABPNotificationListener.SeekDirection
 import com.yevhenii.audiobooksyncer.ui.theme.AudiobookSyncerTheme
-import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
 
@@ -183,14 +183,14 @@ fun PlaybackControlButton(
     var totalDragAmount by remember { mutableFloatStateOf(0f) }
 
     // thresholds
-    val smallDragThreshold = 100f
-    val largeDragThreshold = 300f
+    val smallDragThreshold = 40.dp
+    val largeDragThreshold = 110.dp
 
-    fun handleSeek(dragAmount: Float) {
-        val absAmount = abs(dragAmount)
+    fun handleSeek(dragAmount: Float, density: Density) {
+        val dpAmount = with(density) { dragAmount.toDp() }
         val seekAmount = when {
-            absAmount > largeDragThreshold -> SeekAmount.LARGE
-            absAmount > smallDragThreshold -> SeekAmount.SMALL
+            dpAmount > largeDragThreshold -> SeekAmount.LARGE
+            dpAmount > smallDragThreshold -> SeekAmount.SMALL
             else -> return
         }
 
@@ -218,7 +218,7 @@ fun PlaybackControlButton(
                 totalDragAmount += dragAmount
             },
             onDragEnd = {
-                handleSeek(totalDragAmount)
+                handleSeek(totalDragAmount, this)
             }
         )
     }
