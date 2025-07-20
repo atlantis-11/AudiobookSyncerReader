@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -246,6 +247,13 @@ fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
     val fontSize = 17.sp
     val toggleContent = { showTgt = !showTgt }
 
+    @Composable
+    fun SelectableText(text: String) {
+        SelectionContainer {
+            Text(text = text, color = textColor, fontSize = fontSize)
+        }
+    }
+
     Column(
         modifier = Modifier
             .clickable(onClick = toggleContent)
@@ -253,10 +261,10 @@ fun FragmentElement(syncFragment: SyncFragment, highlighted: Boolean) {
             .padding(15.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(text = syncFragment.src, color = textColor, fontSize = fontSize)
+        SelectableText(syncFragment.src)
 
         if (showTgt) {
-            Text(text = syncFragment.tgt, color = textColor, fontSize = fontSize)
+            SelectableText(syncFragment.tgt)
         }
     }
 }
