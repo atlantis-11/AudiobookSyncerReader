@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
 
-      - name: Build signed APK
+      - name: Build signed APKs
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file="$(pwd)/keystore.jks" \
@@ -38,10 +38,14 @@ jobs:
           VERSION="$(date +"%Y%m%d")-$(git rev-parse --short HEAD)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Move APK
+      - name: Move APKs
         run: |
-          mv app/build/outputs/apk/release/app-release.apk \
-            AudiobookSyncer-${{ steps.get-version.outputs.version }}.apk
+          for f in app/build/outputs/apk/release/*.apk; do
+            arch=$(basename "$f" -release.apk)
+            arch=${arch#app-}
+
+            mv "$f" "AudiobookSyncer-${{ steps.get-version.outputs.version }}-${arch}.apk"
+          done
 
       - name: Push tag
         run: |
