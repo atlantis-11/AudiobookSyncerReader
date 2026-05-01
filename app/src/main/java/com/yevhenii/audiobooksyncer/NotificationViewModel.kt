@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import wseemann.media.FFmpegMediaMetadataRetriever
 import java.io.File
 
 private const val TAG = "NotificationViewModel"
@@ -31,8 +32,8 @@ class NotificationViewModel : ViewModel() {
     private val audiobooksDir = "${Environment.getExternalStorageDirectory().absolutePath}/Audiobooks"
     private val syncMapFileName = "sync_map.json"
 
-    private var currentFolder: String? = null
-    private var audioFilesWithStartPositions: Map<String, Long>? = null
+    private var currentBook: String? = null
+    private var chaptersWithStartPositions: Map<String, Long>? = null
 
     init {
         viewModelScope.launch {
@@ -41,26 +42,36 @@ class NotificationViewModel : ViewModel() {
 
                 playbackState = it.playbackState
 
-                handleFolderChange(it.folder)
-                handleFileAndPositionChange(it.file, it.filePosition)
+                handleBookChange(it.book)
+                handleChapterAndPositionChange(it.chapter, it.chapterPosition)
             }
         }
     }
 
-    private suspend fun handleFolderChange(newFolder: String) {
-        if (currentFolder == newFolder) return
+    private suspend fun handleBookChange(newBook: String) {
+        if (currentBook == newBook) return
 
         syncFragments = null
         currentFragmentIndex = null
 
-        currentFolder = newFolder
-        val bookDir = "$audiobooksDir/$newFolder"
+        currentBook = newBook
+        val bookPath = "$audiobooksDir/$newBook"
 
         withContext(Dispatchers.IO) {
             Log.d(TAG, "Loading sync map...")
 
-            val syncFile = File("$bookDir/$syncMapFileName")
+            val bookFile = File(bookPath)
+            val isM4b = bookFile.isFile && bookFile.extension.equals("m4b", ignoreCase = true)
+
+            // Determine sync map file based on whether the input is an M4B file or a folder
+            val syncFile = if (isM4b) {
+                File(bookFile.parentFile, "${bookFile.nameWithoutExtension}.json")
+            } else {
+                File("$bookPath/$syncMapFileName")
+            }
+
             if (!syncFile.exists()) {
+                Log.d(TAG, "Sync file not found at: ${syncFile.absolutePath}")
                 return@withContext
             }
 
@@ -72,19 +83,23 @@ class NotificationViewModel : ViewModel() {
             }
 
             Log.d(TAG, "Sync map loaded")
-            Log.d(TAG, "Loading audio files...")
+            Log.d(TAG, "Loading audio files/chapters...")
 
-            audioFilesWithStartPositions =
-                getAudioFilesWithStartPositions(bookDir)
+            // Populate the map keys with either chapter titles (M4B) or file names (Folder)
+            chaptersWithStartPositions = if (isM4b) {
+                getM4bChaptersWithStartPositions(bookPath)
+            } else {
+                getAudioFilesWithStartPositions(bookPath)
+            }
 
-            Log.d(TAG, "Audio files loaded")
+            Log.d(TAG, "Audio files/chapters loaded")
         }
     }
 
-    private fun handleFileAndPositionChange(newFile: String, newPos: Long) {
+    private fun handleChapterAndPositionChange(newChapter: String, newPos: Long) {
         syncFragments ?: return
 
-        val globalPos = audioFilesWithStartPositions?.get(newFile)?.plus(newPos)
+        val globalPos = chaptersWithStartPositions?.get(newChapter)?.plus(newPos)
         globalPos ?: return
 
         val currentFragment = currentFragmentIndex?.let { syncFragments?.get(it) }
@@ -97,6 +112,36 @@ class NotificationViewModel : ViewModel() {
         currentFragmentIndex = findSyncFragmentIndex(globalPos) ?: return
 
         Log.d(TAG, "Fragment: $currentFragmentIndex")
+    }
+
+    private fun getM4bChaptersWithStartPositions(filePath: String): Map<String, Long> {
+        val retriever = FFmpegMediaMetadataRetriever()
+        val chapterMap = mutableMapOf<String, Long>()
+
+        try {
+            retriever.setDataSource(filePath)
+            val chapterCountStr = retriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_CHAPTER_COUNT)
+            val chapterCount = chapterCountStr.toInt()
+
+            for (i in 0 until chapterCount) {
+                val title = retriever.extractMetadataFromChapter(
+                    FFmpegMediaMetadataRetriever.METADATA_KEY_TITLE, i
+                )
+
+                val startTimeStr = retriever.extractMetadataFromChapter(
+                    FFmpegMediaMetadataRetriever.METADATA_KEY_CHAPTER_START_TIME, i
+                )
+
+                val startTime = startTimeStr.toLong()
+                chapterMap[title] = startTime
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to extract M4B chapter metadata", e)
+        } finally {
+            retriever.release()
+        }
+
+        return chapterMap
     }
 
     private fun getAudioFilesWithStartPositions(directoryPath: String): Map<String, Long> {

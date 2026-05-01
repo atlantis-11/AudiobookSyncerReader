@@ -67,8 +67,8 @@ class SABPNotificationListener : NotificationListenerService() {
 
     private var mediaController: MediaController? = null
 
-    private lateinit var notificationFolder: String
-    private lateinit var notificationFile: String
+    private lateinit var notificationBook: String
+    private lateinit var notificationChapter: String
     private var playbackState = PlaybackState.STATE_NONE
 
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -117,8 +117,8 @@ class SABPNotificationListener : NotificationListenerService() {
 
         notification = sbn.notification // used for playback control
 
-        notificationFolder = text
-        notificationFile = title
+        notificationBook = text
+        notificationChapter = title
 
         @Suppress("DEPRECATION")
         val mediaSessionToken = extras.get(EXTRA_MEDIA_SESSION) as? MediaSession.Token ?: return
@@ -152,9 +152,9 @@ class SABPNotificationListener : NotificationListenerService() {
         mediaController?.playbackState?.position?.let {
             NotificationDataRepository.setNotificationData(
                 NotificationData(
-                    folder = notificationFolder,
-                    file = notificationFile,
-                    filePosition = it,
+                    book = notificationBook,
+                    chapter = notificationChapter,
+                    chapterPosition = it,
                     playbackState = playbackState
                 )
             )

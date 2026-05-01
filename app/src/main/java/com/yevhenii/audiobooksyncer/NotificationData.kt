@@ -1,8 +1,8 @@
 package com.yevhenii.audiobooksyncer
 
 data class NotificationData(
-    val folder: String,
-    val file: String,
-    val filePosition: Long,
+    val book: String,
+    val chapter: String,
+    val chapterPosition: Long,
     val playbackState: Int
 )
